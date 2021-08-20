@@ -1,0 +1,134 @@
+얘도 깔끔하게 정리해라.(배낭 문제랑 느낌이 비슷함)
+이전 state에서 현재 들고있는 추로 뭘 할 수 있는지 생각해봐
+
+일단 완전탐색은 불가능함.
+input 사이즈가 너무 크다. ---> 완전 탐색하면 시간복잡도가 어떻게 나오는데?
+추의 무게를 입력 받아서
+압축시키고 --> 압축하면서 중복 추 몇개인지 구조체에 넣어서 완전탐색?
+시발 그래도 경우의수가 30!일테고 둘이 서로 뺄 수도 있는데 어떻게 그걸 다 구해
+
+
+추의 무게는 500g이고 30개이하 ---> 최대 표현 가능 무게 15000 이거 제한 걸어줘야함.
+(dp사이즈를 표현 가능 범위에 딱 맞게 짰는데, input으로 이거보다 큰거 들어오면 런타임 에러 뜨거든)
+
+자 그럼 dp의 아이디어 메모리 * 내가 봐야할 state의 수
+메모리는 추의 개수가 되겠지
+내가 봐야할 state의 수는 무게 표현 범위인 15000까지 일테고
+
+처음 풀었을때는
+추의 무게를 그냥 더 해갔음.
+이전 state들 주르르륵 봐서 dp[cur - 1][state] == 1 이면
+dp[cur][state] = 1 이것도 해줘야지 계속 빌드업 해가야하니까
+dp[cur][현재무게] = 1 이건 당연히 해주는거고
+내 현재 무게의 추를 더했지.
+
+
+근데 문제가 뭐냐???
+1 4 무게의 추가 있으면
+더하기만 했을때
+1, 4 ,5만 표현 가능한데
+추를 반대편에 올릴 수도 있는데 그걸 생각안함.
+현재 놓고자하는 추의 무게를 뺄 수도 있는 상황임.
+
+빼면? 1 , 3, 4, 5 이렇게까지 표현이 가능해짐.
+
+-> 그래서 dp쌓아올리는 순서를 반대로 뒤집음.
+input이 크기 순으로 들어왔기 때문에
+
+n부터 시작해서
+dp[cur+1][state] 이게 이전 상태가 되는거임. ---> 여기서 이제 3가지 상황이로 갈리지
+dp[cur+1][state] == 1이면
+dp[cur][state + 현재무게], dp[cur][state] , dp[cur][state - 현재무게] 이게 다 가능한 상황이 되는거임.
+
+
+이렇게 풀었는데 또 문제가 생김!
+맨 처음 올려봤던 추에 대해서는 뺀 경우가 없다...
+
+3
+7 8 9
+1
+6
+
+-9 + 8 + 7 을 해야 6을 만들 수 있는데
+내 메커니즘에는 이걸 하지 않지. 맨처음 봤던 제일 무거운 추는 뺀 경우가 없음.
+
+따라서 모든 경우가 다 담겨있는 dp[1][state] 에서 ==1 일때 arr[n]을 다 빼봤다! 물론 index범위 안에서만
+
+
+#include <stdio.h>
+#include <stdbool.h>
+
+bool dp[31][15001];
+int arr[31];
+int n;
+
+void fill_dp();
+
+int main()
+{
+    scanf("%d",&n);
+    for(int i=1;i<=n;i++)
+        scanf("%d",&arr[i]);
+
+    fill_dp();
+    /*for(int i=1;i<=n;i++)
+    {
+        for(int j=1;j<22;j++)
+            printf("%d ",dp[i][j]);
+        printf("\n");
+    }*/
+    int t;
+    scanf("%d",&t);
+    for(int i=0;i<t;i++)
+    {
+        int buf;
+        scanf("%d",&buf);
+        bool flag = true;
+        if(buf>15000)
+        {
+            printf("N ");
+            continue;
+        }
+        for(int i=0;i<31;i++)
+        {
+            if(dp[i][buf])
+            {
+                printf("Y ");
+                flag = false;
+                break;
+            }
+        }
+        if(flag)
+            printf("N ");
+    }
+    return 0;
+}
+
+void fill_dp()
+{
+    dp[n][arr[n]] = true;
+    for(int i=n-1;i>0;i--)
+    {
+        dp[i][arr[i]] = true;
+        for(int j=15000;j>0;j--)
+        {
+            if(dp[i+1][j]==0)
+                continue;
+            else
+            {
+                dp[i][j] = true;
+                dp[i][j+arr[i]] = true;
+                if(j-arr[i]>=0)
+                    dp[i][j-arr[i]] = true;
+            }
+        }
+    }
+    for(int i=15000;i>0;i--)
+    {
+        if(dp[1][i] == 0)
+            continue;
+        if(i-arr[n]>=0)
+            dp[1][i-arr[n]]= true;
+    }
+    return;
+}
